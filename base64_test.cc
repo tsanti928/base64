@@ -15,6 +15,12 @@ TEST (Base64, encode) {
     EXPECT_THAT(encode("M"), Eq("TQ=="));
     EXPECT_THAT(encode("Manu"), Eq("TWFudQ=="));
     EXPECT_THAT(encode("Manuk"), Eq("TWFudWs="));
+    
+}
+
+TEST (Base64, non_ascii_chars) {
+    std::string bytes = {0x00,  0x00, static_cast<char>(0xe8)};
+    EXPECT_THAT(encode(bytes), Eq("AADo"));
 }
 
 TEST (Base64, decode) {

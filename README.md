@@ -1,4 +1,7 @@
-# base64
-A base64 encoder and decoder.
+# Base64
 
-TODO: Add streaming support.
+A C++ base64 encoder and decoder library.
+
+# TODO
+
+Add streaming support.

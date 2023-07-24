@@ -19,3 +19,13 @@ cc_binary(
     ],
   srcs = ["base64_test.cc"],
 )
+
+cc_binary(
+  name = "main",
+  deps = [
+      ":base64",
+  ],
+  srcs = [
+    "main.cc",
+  ],
+)

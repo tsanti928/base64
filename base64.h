@@ -48,14 +48,14 @@ namespace base64 {
     constexpr int32_t src_mask = 0xff;
     constexpr int32_t max_padding = 2;
 
-    inline std::string encode(const std::string& s) {
+    inline std::string encode(std::string_view s) {
         // 'view' may be smaller than src_digits_per_seq when input is not
         // a multiple of it.
         auto encode_upto_three_octets = [](std::string_view view, char* dest){
             int32_t bits{0};
             for(int i = 0 ; i < view.size(); i++){
                 int32_t shift = bits_per_src_digit * (src_digits_per_seq-1-i);
-                bits |= view[i] << shift;
+                bits |= (view[i] & src_mask) << shift;
             }
 
             // Non-padded digits.
@@ -80,7 +80,7 @@ namespace base64 {
         return encoded;
     }
 
-    inline absl::StatusOr<std::string> decode(const std::string& s) {
+    inline absl::StatusOr<std::string> decode(std::string_view s) {
         const int dest_sz = s.size();
 
         if((dest_sz % dest_digits_per_seq) != 0)
@@ -105,7 +105,7 @@ namespace base64 {
                 auto hit = dest_to_src.find(view[i]);
                 if(hit == dest_to_src.end())
                     return absl::InvalidArgumentError(absl::StrFormat("illegal character %c", view[i]));
-                bits |= hit->second << shift;
+                bits |= (hit->second & dest_mask) << shift;
             }
 
             // Non-padded digits.
