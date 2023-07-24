@@ -34,6 +34,20 @@ TEST (Base64, decode) {
     EXPECT_THAT(*decode("TWFudWs="), Eq("Manuk"));
 }
 
+TEST (Base64, stream_encode) {
+    std::istringstream in("Manu");
+    std::ostringstream out;
+    auto status = encode(in, out, 6);
+    EXPECT_THAT(out.str(), Eq("TWFudQ=="));
+}
+
+TEST (Base64, stream_decode) {
+    std::istringstream in("TQ==");
+    std::ostringstream out;
+    auto status = decode(in, out, 8);
+    EXPECT_THAT(out.str(), Eq("M"));
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

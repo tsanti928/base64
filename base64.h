@@ -1,6 +1,8 @@
 #ifndef BASE_64_H
 #define BASE_64_H
 
+#include <functional>
+#include <iostream>
 #include <math.h>
 #include <unordered_map>
 #include <string>
@@ -11,6 +13,8 @@
 #include "absl/strings/str_format.h"
 
 namespace base64 {
+
+    enum class EncDec { Encode, Decode };
 
     // Translates 6 bits of src data to 8 bits
     // of encoded ASCII dest data.
@@ -84,7 +88,7 @@ namespace base64 {
         const int dest_sz = s.size();
 
         if((dest_sz % dest_digits_per_seq) != 0)
-            return absl::InvalidArgumentError("input length must be a multiple of 4");
+            return absl::InvalidArgumentError(absl::StrFormat("input length must be a multiple of %d", dest_digits_per_seq));
         
         int num_padding{max_padding+1};
         for(int i = 0; i < max_padding+1; i++){
@@ -133,6 +137,76 @@ namespace base64 {
 
         return decoded;
     }
+
+    inline absl::Status encdec(std::istream& in, std::ostream& out, uint32_t buf_size, EncDec action) {
+        uint32_t digits_per_seq;
+        std::function<absl::StatusOr<std::string>(std::string_view)> fn;
+        auto enc = [](std::string_view s) -> absl::StatusOr<std::string> {
+            return encode(s);
+        };
+        auto dec = [](std::string_view s) -> absl::StatusOr<std::string> {
+            return decode(s);
+        };
+
+        switch(action){
+            case EncDec::Encode:
+                fn = enc;
+                digits_per_seq = src_digits_per_seq;
+                break;
+            case EncDec::Decode:
+                fn = dec;
+                digits_per_seq = dest_digits_per_seq;
+                break;
+            default:
+                return absl::InvalidArgumentError("unsupported action");
+        }
+
+        if(buf_size < digits_per_seq){
+            return absl::InvalidArgumentError(absl::StrFormat("buf_size must be at least %d", digits_per_seq));
+        }
+
+        if((buf_size % digits_per_seq) != 0){
+            return absl::InvalidArgumentError(absl::StrFormat("buf_size must be a multiple of %d", digits_per_seq));
+        }
+
+        std::string buffer(buf_size, 0);
+        while(in.good() && out.good()){
+            try {
+                in.read(&buffer[0], buf_size);
+            }
+            catch (std::ios_base::failure f){
+                return absl::AbortedError("reading from input stream threw an exception");
+            }
+            auto view = std::string_view(&buffer[0], in.gcount());
+            auto encdec = fn(view);
+            if(!encdec.ok())
+                return encdec.status();
+
+            try {
+                out.write(encdec->c_str(), encdec->size());
+            }
+            catch (std::ios_base::failure f){
+                return absl::AbortedError("writing to output stream threw an exception");
+            }
+        }
+
+        if(in.bad())
+            return absl::AbortedError("in stream failed");
+
+        if(out.bad())
+            return absl::AbortedError("out stream failed");
+        
+        return absl::OkStatus();
+    }
+
+    inline absl::Status encode(std::istream& in, std::ostream& out, uint32_t buf_size) {
+        return encdec(in, out, buf_size, EncDec::Encode);
+    }
+
+    inline absl::Status decode(std::istream& in, std::ostream& out, uint32_t buf_size) {
+        return encdec(in, out, buf_size, EncDec::Decode);
+    }
+
 
 } // namespace base64
 
