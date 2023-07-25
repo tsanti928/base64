@@ -21,11 +21,13 @@ cc_binary(
 )
 
 cc_binary(
-  name = "main",
+  name = "base64cpp",
   deps = [
       ":base64",
+      "@com_google_absl//absl/flags:flag",
+      "@com_google_absl//absl/flags:parse",
   ],
   srcs = [
-    "main.cc",
+    "base64cpp.cc",
   ],
 )
